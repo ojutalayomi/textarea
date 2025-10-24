@@ -1,0 +1,62 @@
+{
+  "name": "react-textarea-enhanced",
+  "version": "1.0.1",
+  "description": "A React textarea component with Twitter-like features including character limits, entity highlighting, and auto-expansion",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json && npm run copy-css",
+    "copy-css": "cp src/style/ComposeBox.css dist/",
+    "dev": "tsc --watch",
+    "test": "react-scripts test",
+    "prepublishOnly": "npm run build",
+    "release": "node scripts/release.js",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "twitter-text": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.26",
+    "@types/react-dom": "^18.3.7",
+    "@types/twitter-text": "^3.1.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^4.9.5"
+  },
+  "keywords": [
+    "react",
+    "textarea",
+    "twitter",
+    "character-limit",
+    "entity-highlighting",
+    "hashtag",
+    "mention",
+    "url",
+    "typescript",
+    "component"
+  ],
+  "author": "Ojutalayo Ayomide Josiah",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ojutalayomi/textarea.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ojutalayomi/textarea/issues"
+  },
+  "homepage": "https://github.com/ojutalayomi/textarea#readme"
+}
