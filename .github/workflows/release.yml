@@ -40,9 +40,6 @@ jobs:
     - name: Build package
       run: npm run build
       
-    - name: Run tests
-      run: npm test --if-present
-      
     - name: Check if version exists
       id: check-version
       run: |

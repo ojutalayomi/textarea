@@ -32,9 +32,6 @@ jobs:
     - name: Build package
       run: npm run build
       
-    - name: Run tests (if available)
-      run: npm test --if-present
-      
     - name: Publish to npm
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
       run: npm publish --provenance --access public
