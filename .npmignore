@@ -1,0 +1,38 @@
+# Source files
+src/
+public/
+node_modules/
+
+# Development files
+*.log
+.DS_Store
+.env*
+
+# Build artifacts (except dist)
+build/
+coverage/
+
+# Development configs
+.eslintrc*
+.prettierrc*
+rollup.config.js
+tsconfig.json
+
+# Git
+.git/
+.gitignore
+.github/
+PROVENANCE.md
+DEPLOYMENT.md
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+__tests__/
+*.test.*
+*.spec.*
+
+# Documentation (keep README.md)
+docs/
