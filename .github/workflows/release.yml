@@ -100,7 +100,7 @@ jobs:
           ## Usage
           ```tsx
           import { TextAreaBox } from 'react-textarea-enhanced';
-          import 'react-textarea-enhanced/dist/ComposeBox.css';
+          import 'react-textarea-enhanced/dist/index.css';
           
           function App() {
             return <TextAreaBox charLimit={280} />;

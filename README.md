@@ -32,7 +32,7 @@ yarn add react-textarea-enhanced
 ```tsx
 import React, { useState } from 'react';
 import { TextAreaBox } from 'react-textarea-enhanced';
-import 'react-textarea-enhanced/dist/ComposeBox.css';
+import 'react-textarea-enhanced/dist/index.css';
 
 function App() {
   const [details, setDetails] = useState({ charsLeft: 280, text: '' });
@@ -76,7 +76,7 @@ interface Details {
 ```tsx
 import React, { useState } from 'react';
 import { TextAreaBox } from 'react-textarea-enhanced';
-import 'react-textarea-enhanced/dist/ComposeBox.css';
+import 'react-textarea-enhanced/dist/index.css';
 
 function TweetComposer() {
   const [details, setDetails] = useState({ charsLeft: 280, text: '' });
@@ -114,7 +114,7 @@ function TweetComposer() {
 ```tsx
 import React from 'react';
 import { TextAreaBox } from 'react-textarea-enhanced';
-import 'react-textarea-enhanced/dist/ComposeBox.css';
+import 'react-textarea-enhanced/dist/index.css';
 
 function CustomTextarea() {
   return (
@@ -135,7 +135,7 @@ function CustomTextarea() {
 ```tsx
 import React, { useState } from 'react';
 import { TextAreaBox } from 'react-textarea-enhanced';
-import 'react-textarea-enhanced/dist/ComposeBox.css';
+import 'react-textarea-enhanced/dist/index.css';
 
 function ContactForm() {
   const [message, setMessage] = useState({ charsLeft: 1000, text: '' });
@@ -174,7 +174,7 @@ function ContactForm() {
 The component comes with built-in CSS that you can import:
 
 ```tsx
-import 'react-textarea-enhanced/dist/ComposeBox.css';
+import 'react-textarea-enhanced/dist/index.css';
 ```
 
 ### Custom CSS Classes

@@ -78,7 +78,7 @@ Make sure your `package.json` has these scripts:
 {
   "scripts": {
     "build": "mkdir -p dist && cp src/index.ts dist/ && cp src/TextAreaBox.tsx dist/ && cp src/types.ts dist/ && npm run copy-css",
-    "copy-css": "cp src/style/ComposeBox.css dist/",
+    "copy-css": "cp src/style/index.css dist/",
     "test": "npm test --if-present"
   }
 }

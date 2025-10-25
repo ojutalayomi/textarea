@@ -59,9 +59,9 @@ jobs:
           echo "❌ TextAreaBox.d.ts not found"
           exit 1
         fi
-        if [ -f "dist/ComposeBox.css" ]; then
-          echo "✅ ComposeBox.css found"
+        if [ -f "dist/index.css" ]; then
+          echo "✅ index.css found"
         else
-          echo "❌ ComposeBox.css not found"
+          echo "❌ index.css not found"
           exit 1
         fi
