@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import TextAreaBox from './components/TextAreaBox';
 import { Detail, type Details } from './components/types';
-import '../style/index.css';
-import '../style/style.css';
+import './style/index.css';
+import './style/style.css';
 import './elements/counter-element';
 import { Link } from 'react-router-dom';
 

@@ -42,8 +42,8 @@ function createGitTag(version) {
 
 function pushToGit(tag) {
   try {
-    execSync(`git push origin main --allow-unrelated-histories`, { stdio: 'inherit' });
-    execSync(`git push origin ${tag} --allow-unrelated-histories`, { stdio: 'inherit' });
+    execSync(`git push origin main`, { stdio: 'inherit' });
+    execSync(`git push origin ${tag}`, { stdio: 'inherit' });
     console.log(`✅ Pushed to GitHub`);
   } catch (error) {
     console.error(`❌ Failed to push to GitHub: ${error.message}`);

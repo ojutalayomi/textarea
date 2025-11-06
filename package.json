@@ -1,6 +1,6 @@
 {
   "name": "react-textarea-enhanced",
-  "version": "1.2.0",
+  "version": "1.0.0",
   "description": "A React textarea component with Twitter-like features including character limits, entity highlighting, and auto-expansion",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,6 @@
     "release:major": "node scripts/release.js major"
   },
   "dependencies": {
-    "react-router-dom": "^7.9.5",
     "twitter-text": "^3.1.0"
   },
   "devDependencies": {
@@ -39,6 +38,7 @@
     "globals": "^16.4.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "npm:rolldown-vite@7.1.14"
