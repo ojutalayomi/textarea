@@ -1,6 +1,6 @@
 {
   "name": "react-textarea-enhanced",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "description": "A React textarea component with Twitter-like features including character limits, entity highlighting, and auto-expansion",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,12 +9,12 @@
     "README.md"
   ],
   "scripts": {
-    "p:build": "tsc --project tsconfig.build.json && npm run copy-css",
+    "build": "tsc --project tsconfig.build.json && npm run copy-css",
     "copy-css": "cp src/style/index.css dist/",
     "re-order": "cp dist/components/* dist/ && rm -rf dist/components",
     "p:dev": "tsc --watch",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "p:build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "release": "node scripts/release.js",
