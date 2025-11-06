@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build package
+      run: npm run build
+      
+    - name: Check build output
+      run: |
+        echo "Checking if dist folder exists..."
+        ls -la dist/
+        echo "Checking package contents..."
+        if [ -f "dist/index.js" ]; then
+          echo "✅ index.js found"
+        else
+          echo "❌ index.js not found"
+          exit 1
+        fi
+        if [ -f "dist/index.d.ts" ]; then
+          echo "✅ index.d.ts found"
+        else
+          echo "❌ index.d.ts not found"
+          exit 1
+        fi
+        if [ -f "dist/TextAreaBox.js" ]; then
+          echo "✅ TextAreaBox.js found"
+        else
+          echo "❌ TextAreaBox.js not found"
+          exit 1
+        fi
+        if [ -f "dist/TextAreaBox.d.ts" ]; then
+          echo "✅ TextAreaBox.d.ts found"
+        else
+          echo "❌ TextAreaBox.d.ts not found"
+          exit 1
+        fi
+        if [ -f "dist/index.css" ]; then
+          echo "✅ index.css found"
+        else
+          echo "❌ index.css not found"
+          exit 1
+        fi

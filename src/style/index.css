@@ -1,0 +1,119 @@
+:root {
+    --font-size: 15px;
+    --font-family: 'Courier New', Courier, monospace;
+    --highlight-color: #1da1f2;
+}
+
+.font-size-dynamic {
+    font-size: var(--font-size);
+}
+
+.font-family-dynamic {
+    font-family: var(--font-family);
+}
+  
+.textarea-wrapper,
+[data-textarea-box].txb-wrapper {
+    position: relative;
+}
+
+.textarea-wrapper .highlight-layer, .txb-highlight-layer,
+.textarea-wrapper textarea,
+[data-textarea-box].txb-wrapper .txb-textarea {
+    display: block;
+    /* Inline axis width */
+    inline-size: 100%;
+    max-inline-size: 100%;
+    /* Progressive enhancement */
+    max-inline-size: -webkit-fill-available; /* Chrome/Safari */
+    max-inline-size: -moz-available;         /* Firefox */
+}
+
+.textarea-wrapper:focus-within,
+[data-textarea-box].txb-wrapper:focus-within {
+    box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.2);
+    border-radius: 10px;
+}
+  
+[data-textarea-box] .txb-textarea,
+textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: transparent;
+    caret-color: #14171a;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 15px;
+    resize: none;
+    outline: none;
+    line-height: 1.4;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+}
+  
+.highlight-layer, .txb-highlight-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: auto;
+    padding: 12px 16px;
+    color: #14171a;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 15px;
+    line-height: 1.4;
+    pointer-events: none;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    z-index: 1;
+}
+  
+[data-textarea-box] .txb-textarea::placeholder,
+textarea::placeholder {
+    color: #657786;
+    opacity: 1;
+}
+  
+@media (prefers-color-scheme: dark) {
+    [data-textarea-box] .txb-textarea,
+    textarea {
+      caret-color: #e7e9ea;
+    }
+    
+    [data-textarea-box] .txb-highlight,
+    .highlight-layer, .txb-highlight-layer {
+        color: #e7e9ea;
+    }
+    
+    [data-textarea-box] .txb-textarea::placeholder,
+    textarea::placeholder {
+        color: #536471;
+    }
+}
+  
+@media (max-width: 480px) {
+    [data-textarea-box] .txb-textarea,
+    textarea,
+    .highlight-layer, .txb-highlight-layer {
+        min-height: 48px;
+        padding: 14px 18px;
+    }
+}
+
+[data-textarea-box] .txb-highlight.hashtag,
+[data-textarea-box] .txb-highlight.mention,
+[data-textarea-box] .txb-highlight.url,
+[data-textarea-box] .txb-highlight.cashtag,
+.highlight.hashtag,
+.highlight.mention,
+.highlight.url,
+.highlight.cashtag {
+  color: var(--highlight-color);
+}
+
+[data-textarea-box] .txb-limit-content,
+.limit-content {
+    background-color: #f2211d;
+    color: #fff;
+}
