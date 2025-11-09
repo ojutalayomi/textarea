@@ -8,10 +8,10 @@ import type { TextAreaBoxProps } from './types';
  * A customizable textarea component with entity highlighting, character limit enforcement,
  * and detail extraction (tags, URLs, hashtags, cashtags, and mentions).
  *
- * @param {number} [charLimit=480] - The maximum number of characters allowed in the text area.
- * @param {number} [height=450] - The height of the text area in pixels.
- * @param {number} [minHeight=250] - The minimum height of the text area in pixels.
- * @param {number} [fontSize=15] - The font size of the text area in pixels.
+ * @param {number} [charLimit=10000] - The maximum number of characters allowed in the text area.
+ * @param {number} [height] - The height of the text area in pixels.
+ * @param {number} [minHeight=30] - The minimum height of the text area in pixels.
+ * @param {number} [maxHeight=450] - The maximum height of the text area in pixels.
  * @param {string|React.CSSProperties['fontFamily']} [fontFamily='Courier New, Courier, monospace'] - The font family of the text area.
  * @param {string} [baseUrl] - The base URL for anchor tags in the text area component.
  * @param {(details: import('./types').Details) => void} [getDetails] - Callback that receives field details such as:
@@ -45,27 +45,34 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
     highlightId: highlightIdProp,
     classNamePrefix = 'txb',
     legacyClassNames = false,
-    charLimit = 480,
-    height = 450,
-    minHeight = 250,
-    fontSize = 15,
+    charLimit = 10000,
+    height,
+    minHeight = 30,
+    maxHeight = 450,
     fontFamily = 'Courier New, Courier, monospace',
     highlightColor = '#1da1f2',
     baseUrl = "",
     getDetails,
+    value: controlledValue,
+    onChange,
     ...props
   }, ref) => {
     const reactId = useId();
     const wrapperId = wrapperIdProp ?? `textarea-wrapper-${reactId}`;
     const textareaId = textareaIdProp ?? `textarea-${reactId}`;
     const highlightId = highlightIdProp ?? `highlight-layer-${reactId}`;
-    const [text, setText] = useState('');
+    
+    // Use controlled value if provided, otherwise use internal state
+    const isControlled = controlledValue !== undefined;
+    const [internalText, setInternalText] = useState('');
+    
+    const text = isControlled ? (controlledValue ?? '') : internalText;
     const [unformattedText, setUnformattedText] = useState('');
     const [charsLeft, setCharsLeft] = useState(charLimit);
     const textareaRef = useRef<HTMLTextAreaElement>(ref as unknown as HTMLTextAreaElement);
     const regex = useMemo(() => /\s*<limit>([\s\S]*?)<\/limit>/, []);
   
-    function getFinalText(value: string, charLimit: number) {
+    const getFinalText = useCallback((value: string, charLimit: number) => {
       let finalText = '';
       if (value.length > charLimit) {
         // If already wrapped with <limit>, preserve as is
@@ -78,32 +85,47 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
         finalText = value;
       }
       return finalText;
-    }
+    }, []);
     
     /**
      * Handle text input
      */
-    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement> | React.ClipboardEvent<HTMLTextAreaElement>) => {
-      let value: string;
-      if ('clipboardData' in e) {
+    const handleInput = useCallback((
+      e: React.ChangeEvent<HTMLTextAreaElement> | React.ClipboardEvent<HTMLTextAreaElement> | React.FormEvent<HTMLTextAreaElement>
+    ) => {
+      let value = '';
+      if ('clipboardData' in e && e.clipboardData) {
         e.preventDefault();
         value = e.clipboardData.getData('text');
-      } else if ('target' in e && e.target && e.target.value !== undefined) {
-        value = e.target.value;
-      } else {
-        value = '';
+      } else if ('currentTarget' in e && e.currentTarget && e.currentTarget.value !== undefined) {
+        value = e.currentTarget.value;
+      } else if ('target' in e && e.target && (e.target as HTMLTextAreaElement).value !== undefined) {
+        value = (e.target as HTMLTextAreaElement).value;
       }
-  
+
       const finalText = getFinalText(value, charLimit);
       const re = regex.exec(finalText);
       let theText = finalText.slice(0, charLimit);
       if (finalText.length > charLimit && re) {
         theText += re[1];
       }
-  
-      setText(theText);
+
+      // Update state based on controlled/uncontrolled mode
+      if (isControlled) {
+        onChange?.(theText);
+      } else {
+        setInternalText(theText);
+      }
       setUnformattedText(finalText);
-    };
+    }, [charLimit, regex, isControlled, onChange, getFinalText]);
+  
+    // Sync unformattedText when controlled value changes
+    useEffect(() => {
+      if (isControlled && controlledValue !== undefined) {
+        const finalText = getFinalText(controlledValue, charLimit);
+        setUnformattedText(finalText);
+      }
+    }, [isControlled, controlledValue, charLimit, getFinalText]);
   
     // Auto-expand textarea and update counter
     useEffect(() => {
@@ -206,28 +228,44 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       return parts;
     }, [charLimit, regex, text, unformattedText, getEntityProps, classNamePrefix, highlightColor]);
   
+    const clearText = useCallback(() => {
+      if (isControlled) {
+        onChange?.('');
+      } else {
+        setInternalText('');
+      }
+      setUnformattedText('');
+      setCharsLeft(charLimit);
+      requestAnimationFrame(() => textareaRef.current?.focus());
+    }, [charLimit, isControlled, onChange]);
+    
     useEffect(() => {
-      getDetails?.({ 
-        charsLeft, 
-        text, 
+      getDetails?.({
+        charsLeft,
+        text,
         highlightedText,
         tags: {
           cash: P.extractCashtags(text),
           hash: P.extractHashtags(text),
           mention: P.extractMentions(text),
         },
-        urls: P.extractUrls(text)
+        urls: P.extractUrls(text),
+        clearText,
       });
-    }, [charsLeft, getDetails, highlightedText, text]);
+    }, [charsLeft, getDetails, highlightedText, text, clearText]);
   
     // Handle Ctrl+Enter for submission
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.ctrlKey && e.key === 'Enter' && text.length > 0 && charsLeft >= 0) {
         console.log('Tweet:', text); // Replace with API call
-        setText('');
+        if (isControlled) {
+          onChange?.('');
+        } else {
+          setInternalText('');
+        }
         setUnformattedText('');
       }
-    };
+    }, [charsLeft, text, isControlled, onChange]);
   
     const wrapperBaseClass = legacyClassNames ? 'textarea-wrapper ' : '';
     const wrapperPrefixedClass = `${classNamePrefix}-wrapper`;
@@ -235,17 +273,24 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
     const highlightPrefixedClass = `${classNamePrefix}-highlight-layer`;
     const textareaPrefixedClass = `${classNamePrefix}-textarea`;
 
+    const { style, ...rest } = props;
+
     return (
       <div
         id={wrapperId}
         data-textarea-box
         className={(wrapperBaseClass + wrapperPrefixedClass + (wrapperClassName ? ' ' + wrapperClassName : '') + (className ? ' ' + className : '')).trim()}
-        style={{ maxHeight: `${height}px`, overflow: 'auto' }}
+        style={{ 
+          ...(maxHeight && { maxHeight: `${maxHeight}px` }), 
+          ...(minHeight && { minHeight: `${minHeight}px` }), 
+          ...(height && { height: `${height}px` }), 
+          ...style 
+        }}
       >
         <div
           id={highlightId}
           className={([highlightBaseClass, highlightPrefixedClass, highlightClassName].filter(Boolean) as string[]).join(' ')}
-          style={{ minHeight: `${minHeight}px`, fontSize: `${fontSize}px`, fontFamily: fontFamily }}
+          style={{ minHeight: `${minHeight}px`, fontFamily: fontFamily }}
         >
           {highlightedText}
         </div>
@@ -259,8 +304,8 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
           rows={1}
           aria-labelledby={`${wrapperId} ${textareaId}`}
           className={([textareaPrefixedClass, legacyClassNames ? undefined : undefined, textareaClassName].filter(Boolean) as string[]).join(' ')}
-          style={{ minHeight: `${minHeight}px`, fontSize: `${fontSize}px`, fontFamily }}
-          {...props}
+          style={{ minHeight: `${minHeight}px`, fontFamily, ...(height && { height: `${height}px` }) }}
+          {...rest}
         />
       </div>
     );

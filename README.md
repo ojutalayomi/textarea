@@ -8,6 +8,7 @@ A powerful React textarea component with Twitter-like features including charact
 - 🔗 **Entity Highlighting**: Automatic detection and highlighting of hashtags, mentions, URLs, and cashtags
 - 📏 **Auto-expansion**: Textarea automatically grows with content
 - 🎨 **Customizable**: Flexible styling and configuration options
+- 🎛️ **Controlled/Uncontrolled**: Support for both controlled and uncontrolled component patterns
 - 📱 **Responsive**: Works great on mobile and desktop
 - 🌙 **Dark Mode**: Built-in dark mode support
 - ⚡ **TypeScript**: Full TypeScript support with type definitions
@@ -29,6 +30,8 @@ yarn add react-textarea-enhanced
 
 ## Quick Start
 
+### Uncontrolled Mode (Default)
+
 ```tsx
 import React, { useState } from 'react';
 import { TextAreaBox, Detail } from 'react-textarea-enhanced';
@@ -49,15 +52,44 @@ function App() {
 }
 ```
 
+### Controlled Mode
+
+```tsx
+import React, { useState } from 'react';
+import { TextAreaBox, Detail } from 'react-textarea-enhanced';
+import 'react-textarea-enhanced/dist/index.css';
+
+function App() {
+  const [text, setText] = useState('');
+  const [details, setDetails] = useState(new Detail());
+
+  return (
+    <div>
+      <TextAreaBox 
+        value={text}
+        onChange={setText}
+        charLimit={280}
+        getDetails={setDetails}
+      />
+      <div>Characters left: {details.charsLeft}</div>
+    </div>
+  );
+}
+```
+
 ## Props
 
 ### TextAreaBox
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `charLimit` | `number` | `480` | Maximum number of characters allowed |
-| `height` | `number` | `450` | Maximum height of the textarea |
-| `minHeight` | `number` | `250` | Minimum height of the textarea |
+| `value` | `string` | - | Controlled value for the textarea. If provided, component becomes controlled. |
+| `onChange` | `(value: string) => void` | - | Callback fired when textarea value changes. Required if using controlled mode. |
+| `charLimit` | `number` | `10000` | Maximum number of characters allowed |
+| `height` | `number` | - | Fixed height of the textarea in pixels |
+| `minHeight` | `number` | `30` | Minimum height of the textarea in pixels |
+| `maxHeight` | `number` | `450` | Maximum height of the textarea in pixels |
+| `fontFamily` | `string \| React.CSSProperties['fontFamily']` | `'Courier New, Courier, monospace'` | Font family for the textarea |
 | `baseUrl` | `string` | `""` | Base URL for generated entity links |
 | `getDetails` | `(details: Details) => void` | - | Callback to receive textarea details |
 | `wrapperId` | `string` | generated | Optional id for wrapper div |
@@ -67,7 +99,8 @@ function App() {
 | `textareaClassName` | `string` | - | Extra class for textarea |
 | `highlightClassName` | `string` | - | Extra class for highlight layer |
 | `classNamePrefix` | `string` | `txb` | Prefix for internal classes to avoid collisions |
-| `legacyClassNames` | `boolean` | `true` | Include legacy generic classes for backward compatibility |
+| `legacyClassNames` | `boolean` | `false` | Include legacy generic classes for backward compatibility |
+| `highlightColor` | `string` | `'#1da1f2'` | Color for entity highlights |
 
 ### Details Interface
 
@@ -90,6 +123,49 @@ interface Details {
   urls: string[]
 }
 ```
+
+## Controlled vs Uncontrolled Mode
+
+The `TextAreaBox` component supports both controlled and uncontrolled patterns, similar to React's native input elements.
+
+### Uncontrolled Mode (Default)
+
+When you don't provide the `value` prop, the component manages its own internal state:
+
+```tsx
+<TextAreaBox 
+  charLimit={280}
+  getDetails={setDetails}
+/>
+```
+
+- Component manages its own state internally
+- Use `getDetails` callback to access the current value and details
+- Simpler for basic use cases
+- Good for forms where you only need the value on submit
+
+### Controlled Mode
+
+When you provide the `value` prop, the component becomes controlled:
+
+```tsx
+const [text, setText] = useState('');
+
+<TextAreaBox 
+  value={text}
+  onChange={setText}
+  charLimit={280}
+  getDetails={setDetails}
+/>
+```
+
+- You manage the state externally
+- `onChange` callback is called with the new value whenever it changes
+- More control over the component's value
+- Better for complex state management, validation, or when you need to programmatically set the value
+- Required if you want to clear the textarea programmatically or sync with other components
+
+**Note**: You can still use `getDetails` in controlled mode to access entity information (hashtags, mentions, URLs, etc.) and other details.
 
 ## Examples
 
@@ -152,21 +228,67 @@ function CustomTextarea() {
 }
 ```
 
+### Controlled Mode
+
+```tsx
+import React, { useState } from 'react';
+import { TextAreaBox, Detail } from 'react-textarea-enhanced';
+import 'react-textarea-enhanced/dist/index.css';
+
+function ControlledTextarea() {
+  const [text, setText] = useState('');
+  const [details, setDetails] = useState(new Detail());
+
+  const handleSubmit = () => {
+    if (text.length > 0 && details.charsLeft >= 0) {
+      console.log('Posting:', text);
+      // Handle submission
+      setText(''); // Clear after submission
+    }
+  };
+
+  return (
+    <div className="compose-box">
+      <TextAreaBox 
+        value={text}
+        onChange={setText}
+        charLimit={280}
+        getDetails={setDetails}
+      />
+      <button 
+        onClick={handleSubmit}
+        disabled={text.length === 0 || details.charsLeft < 0}
+        className="tweet-button"
+      >
+        Tweet
+      </button>
+      <div className={`char-counter ${details.charsLeft <= 20 ? 'warning' : ''} ${details.charsLeft <= 0 ? 'error' : ''}`}>
+        {details.charsLeft}
+      </div>
+    </div>
+  );
+}
+```
+
 ### With Form Integration
 
 ```tsx
 import React, { useState } from 'react';
-import { TextAreaBox } from 'react-textarea-enhanced';
+import { TextAreaBox, Detail } from 'react-textarea-enhanced';
 import 'react-textarea-enhanced/dist/index.css';
 
 function ContactForm() {
-  const [message, setMessage] = useState({ charsLeft: 1000, text: '' });
+  const [text, setText] = useState('');
+  const [details, setDetails] = useState(new Detail());
   const [name, setName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.text.length > 0) {
-      console.log('Form submitted:', { name, message: message.text });
+    if (text.length > 0) {
+      console.log('Form submitted:', { name, message: text });
+      // Reset form
+      setText('');
+      setName('');
     }
   };
 
@@ -180,10 +302,12 @@ function ContactForm() {
         required
       />
       <TextAreaBox 
+        value={text}
+        onChange={setText}
         charLimit={1000}
-        getDetails={setMessage}
+        getDetails={setDetails}
       />
-      <button type="submit" disabled={message.text.length === 0}>
+      <button type="submit" disabled={text.length === 0}>
         Send Message
       </button>
     </form>
@@ -292,3 +416,22 @@ MIT © [Ojutalayo Ayomide Josiah](https://github.com/ojutalayomi)
 - Entity highlighting:
   - Entity anchor tags now also include the prefixed highlight class for easier scoping.
 - No breaking changes expected; legacy classes remain by default. Set `legacyClassNames={false}` to fully isolate styles.
+
+# v1.3.1
+
+- **Controlled Component Support**: 
+  - Added `value` and `onChange` props to support controlled component pattern
+  - Component now supports both controlled and uncontrolled modes
+  - If `value` prop is provided, component becomes controlled and uses external state
+  - If `value` prop is not provided, component manages its own internal state (backward compatible)
+  - `onChange` callback receives the new string value directly: `onChange?: (value: string) => void`
+- **Improved State Management**:
+  - `clearText()` function in `Details` now works correctly in both controlled and uncontrolled modes
+  - Character limit enforcement works seamlessly in both modes
+  - All existing features (entity highlighting, auto-expansion, etc.) work in both modes
+- **Backward Compatibility**: 
+  - No breaking changes - existing code continues to work without modifications
+  - Uncontrolled mode remains the default when `value` prop is not provided
+- **TypeScript**: 
+  - Updated type definitions to include `value` and `onChange` props
+  - Full type safety for both controlled and uncontrolled usage patterns

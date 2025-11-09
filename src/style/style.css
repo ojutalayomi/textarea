@@ -135,21 +135,6 @@ body {
       background: #15202b;
       border-color: #2f3336;
     }
-
-    [data-textarea-box] .txb-textarea,
-    textarea {
-      caret-color: #e7e9ea;
-    }
-    
-    [data-textarea-box] .txb-highlight,
-    .highlight-layer, .txb-highlight-layer {
-        color: #e7e9ea;
-    }
-    
-    [data-textarea-box] .txb-textarea::placeholder,
-    textarea::placeholder {
-        color: #536471;
-    }
     
     .char-counter {
         color: #536471;

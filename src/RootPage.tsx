@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import React, { useState } from 'react';
-import TextAreaBox from './components/TextAreaBox';
-import { Detail, type Details } from './components/types';
-import './style/index.css';
+import { TextAreaBox, Detail, type Details } from 'react-textarea-enhanced';
+import 'react-textarea-enhanced/dist/index.css';
 import './style/style.css';
 import './elements/counter-element';
 import { Link } from 'react-router-dom';
@@ -10,6 +9,7 @@ import { Link } from 'react-router-dom';
 
 const RootPage = () => {
   const [details, setDetails] = useState<Details>(new Detail());
+  const [text, setText] = useState('');
   const toolbar = document.getElementById('toolbar');
   const contentDiv = document.getElementById('content');
   
@@ -28,6 +28,10 @@ const RootPage = () => {
     // After applying, hide the toolbar
     toolbar!.style.display = 'none';
   }
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log(e.target.value);
+  };
 
   function handleMouseUp() {
     const selection = window.getSelection();
@@ -54,8 +58,19 @@ const RootPage = () => {
         <Link to="/chat">Chat</Link>
       </div>
       <h2>RootPage is rendering!</h2>
-      <TextAreaBox charLimit={1500} getDetails={setDetails} height={150} minHeight={100} onKeyDown={handleKeyDown}/>
-      <button disabled={details.text.length === 0 || details.charsLeft < 0} className="tweet-button">
+      <TextAreaBox 
+      value={text}
+      onChange={setText}
+      charLimit={1500} 
+      getDetails={setDetails} 
+      style={{ color: "white", caretColor: "white", padding: "10px" }}
+      minHeight={30} 
+      maxHeight={350} 
+      onKeyDown={handleKeyDown} 
+      onInput={handleInput}
+      textareaClassName='po'
+      />
+      <button disabled={text.length === 0 || details.charsLeft < 0} className="tweet-button">
         Tweet
       </button>
       <div className={`char-counter ${details.charsLeft <= 20 ? 'warning' : ''} ${details.charsLeft <= 0 ? 'error' : ''}`}>
@@ -64,7 +79,7 @@ const RootPage = () => {
       <h2>Preview</h2>
       <hr/>
       <counter-element></counter-element>
-      <pre id='content' onMouseUp={handleMouseUp} contentEditable style={{ color: "white" }}>
+      <pre id='content' onMouseUp={handleMouseUp} style={{ color: "white" }}>
         <div id="toolbar" className="toolbar">
           <button onClick={() => applyFormat('bold')}><b>B</b></button>
           <button onClick={() => applyFormat('italic')}><i>I</i></button>

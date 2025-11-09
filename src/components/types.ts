@@ -27,7 +27,11 @@ export interface Details {
   /**
    * Urls in the text
    */
-  urls: string[]
+  urls: string[],
+  /**
+   * Clear the text in the text area
+   */
+  clearText: () => void
 }
 
 /**
@@ -39,6 +43,7 @@ export class Detail implements Details {
   highlightedText: ReactNode;
   tags: { hash: string[]; cash: string[]; mention: string[]; };
   urls: string[];
+  clearText: () => void;
 
   constructor () {
     this.charsLeft = 0;
@@ -50,38 +55,60 @@ export class Detail implements Details {
       mention: []
     };
     this.urls = []
+    this.clearText = () => {
+      this.text = "";
+      this.highlightedText = null;
+      this.tags = {
+        cash: [],
+        hash: [],
+        mention: []
+      };
+      this.urls = [];
+    }
   }
 
 }
 
 /**
+/**
  * The props for the text area box
  */
-export interface TextAreaBoxProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextAreaBoxProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | 'value'> {
+  /**
+   * Controlled value for the textarea. If provided, the component becomes controlled.
+   * If not provided, the component manages its own internal state.
+   * @type {string}
+   */
+  value?: string;
+  /**
+   * Callback fired when the textarea value changes. Required if using controlled mode (value prop).
+   * @param {string} value - The new value of the textarea
+   * @returns void
+   */
+  onChange?: (value: string) => void;
   /**
    * The maximum number of characters allowed in the text area
-   * @default 480
+   * @default 10000
    * @type {number}
    */
   charLimit?: number;
   /**
    * The height of the text area
-   * @default 450
    * @type {number}
    */
   height?: number;
   /**
    * The minimum height of the text area
-   * @default 250
+   * @default 30
    * @type {number}
    */
   minHeight?: number;
   /**
-   * The font size of the text area
-   * @default 15px
+   * The maximum height of the text area
+   * @default 450
    * @type {number}
    */
-  fontSize?: number;
+  maxHeight?: number;
   /**
    * The font family of the text area
    * @default 'Courier New', Courier, monospace

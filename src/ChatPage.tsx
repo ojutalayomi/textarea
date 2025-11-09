@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import TextAreaBox from './components/TextAreaBox';
-import { Detail, type Details } from './components/types';
-import './style/index.css';
-import './style/style.css';
+import { TextAreaBox, Detail, type Details } from 'react-textarea-enhanced';
+import 'react-textarea-enhanced/dist/index.css';
+// import TextAreaBox from './components/TextAreaBox';
+// import { Detail, type Details } from './components/types';
+// import './style/index.css';
 import { Link } from 'react-router-dom';
 
 type ChatMessage = {
@@ -33,7 +34,7 @@ const ChatPage: React.FC = () => {
     setMessages(prev => [...prev, newMsg]);
 
     // Clear composer: reset details and remount TextAreaBox
-    setComposeDetails(new Detail());
+    composeDetails.clearText();
     setComposerKey(k => k + 1);
 
     // Demo: simulate a reply
@@ -65,6 +66,10 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log(e.target.value);
+  };
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     const el = messagesRef.current;
@@ -94,14 +99,14 @@ const ChatPage: React.FC = () => {
         <TextAreaBox
           key={composerKey}
           charLimit={10000}
-          height={160}
-          minHeight={100}
+          minHeight={16}
           getDetails={setComposeDetails}
           onKeyDown={handleKeyDown}
+          onInput={handleInput}
           placeholder="Write a message..."
-          fontSize={10}
           fontFamily="Courier New, Courier, monospace"
           highlightColor="oklch(0.84 0.21 108.12)"
+          style={{ color: 'white !important', caretColor: 'white', padding: '10px', background: '#111827' }}
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
