@@ -28,6 +28,17 @@ function updateVersion(newVersion) {
   console.log(`✅ Updated package.json to version ${newVersion}`);
 }
 
+function commitVersionChange(newVersion) {
+  try {
+    execSync(`git add package.json`, { stdio: 'inherit' });
+    execSync(`git commit -m "chore: bump version to ${newVersion}"`, { stdio: 'inherit' });
+    console.log(`✅ Committed version change`);
+  } catch (error) {
+    console.error(`❌ Failed to commit version change: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 function createGitTag(version) {
   const tag = `v${version}`;
   try {
@@ -69,7 +80,10 @@ function main() {
   // Update package.json
   updateVersion(newVersion);
   
-  // Create git tag
+  // Commit the version change
+  commitVersionChange(newVersion);
+  
+  // Create git tag (points to the commit with the updated version)
   const tag = createGitTag(newVersion);
   
   // Push to GitHub
