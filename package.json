@@ -1,6 +1,6 @@
 {
   "name": "react-textarea-enhanced",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "A React textarea component with Twitter-like features including character limits, entity highlighting, and auto-expansion",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,10 +21,9 @@
     "release:patch": "node scripts/release.js patch",
     "release:minor": "node scripts/release.js minor",
     "release:major": "node scripts/release.js major",
-    "q": "rm -rf dist react-textarea-enhanced-1.3.0.tgz && npm run build && npm pack && npm uninstall react-textarea-enhanced && npm install react-textarea-enhanced-1.3.0.tgz"
+    "q": "rm -rf dist react-textarea-enhanced-1.3.0.tgz && npm run build && npm pack && npm uninstall react-textarea-enhanced && npm install --save-dev react-textarea-enhanced-1.3.0.tgz"
   },
   "dependencies": {
-    "react-textarea-enhanced": "file:react-textarea-enhanced-1.3.0.tgz",
     "twitter-text": "^3.1.0"
   },
   "devDependencies": {

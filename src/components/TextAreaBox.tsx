@@ -279,6 +279,9 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       <div
         id={wrapperId}
         data-textarea-box
+        onClick={() => {
+          textareaRef.current?.focus();
+        }}
         className={(wrapperBaseClass + wrapperPrefixedClass + (wrapperClassName ? ' ' + wrapperClassName : '') + (className ? ' ' + className : '')).trim()}
         style={{ 
           ...(maxHeight && { maxHeight: `${maxHeight}px` }), 
