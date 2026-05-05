@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useId, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useId, useCallback, useDeferredValue, startTransition } from 'react';
 import P, { type EntityWithIndices } from './lib/text';
 import type { TextAreaBoxProps } from './types';
 
@@ -67,10 +67,10 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
     const [internalText, setInternalText] = useState('');
     
     const text = isControlled ? (controlledValue ?? '') : internalText;
-    const [unformattedText, setUnformattedText] = useState('');
-    const [charsLeft, setCharsLeft] = useState(charLimit);
     const textareaRef = useRef<HTMLTextAreaElement>(ref as unknown as HTMLTextAreaElement);
     const regex = useMemo(() => /\s*<limit>([\s\S]*?)<\/limit>/, []);
+    const deferredText = useDeferredValue(text);
+    const charsLeft = charLimit - text.length;
   
     const getFinalText = useCallback((value: string, charLimit: number) => {
       let finalText = '';
@@ -86,6 +86,9 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       }
       return finalText;
     }, []);
+
+    const formattedText = useMemo(() => getFinalText(text, charLimit), [charLimit, getFinalText, text]);
+    const deferredFormattedText = useDeferredValue(formattedText);
     
     /**
      * Handle text input
@@ -116,23 +119,13 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       } else {
         setInternalText(theText);
       }
-      setUnformattedText(finalText);
     }, [charLimit, regex, isControlled, onChange, getFinalText]);
-  
-    // Sync unformattedText when controlled value changes
-    useEffect(() => {
-      if (isControlled && controlledValue !== undefined) {
-        const finalText = getFinalText(controlledValue, charLimit);
-        setUnformattedText(finalText);
-      }
-    }, [isControlled, controlledValue, charLimit, getFinalText]);
   
     // Auto-expand textarea and update counter
     useEffect(() => {
       const textarea = textareaRef.current;
       textarea!.style.height = 'auto';
       textarea!.style.height = `${Math.min(textarea!.scrollHeight, textarea!.previousElementSibling!.clientHeight)}px`;
-      setCharsLeft(charLimit - text.length);
     }, [charLimit, height, text]);
   
     // Helper to determine entity type and generate href
@@ -170,7 +163,7 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
   
     // Memoized highlighted text using twitter-text for robust parsing
     const highlightedText = useMemo(() => {
-      const re = regex.exec(unformattedText);
+      const re = regex.exec(deferredFormattedText);
   
       const entityHandler = (text: string, limit = true) => {
         const theText = text.length > charLimit && limit ? text.slice(0, charLimit) : text;
@@ -219,14 +212,14 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
         return { parts, theText };
       }
   
-      const { parts } = entityHandler(text);
+      const { parts } = entityHandler(deferredText);
   
-      if (text.length > charLimit && re) {
+      if (deferredText.length > charLimit && re) {
         parts.push(<span key={parts.length} className='limit-content'>{entityHandler(re[1], false).parts}</span>);
       }
       
       return parts;
-    }, [charLimit, regex, text, unformattedText, getEntityProps, classNamePrefix, highlightColor]);
+    }, [charLimit, regex, deferredText, deferredFormattedText, getEntityProps, classNamePrefix, highlightColor]);
   
     const clearText = useCallback(() => {
       if (isControlled) {
@@ -234,25 +227,27 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       } else {
         setInternalText('');
       }
-      setUnformattedText('');
-      setCharsLeft(charLimit);
       requestAnimationFrame(() => textareaRef.current?.focus());
-    }, [charLimit, isControlled, onChange]);
+    }, [isControlled, onChange]);
     
     useEffect(() => {
-      getDetails?.({
-        charsLeft,
-        text,
-        highlightedText,
-        tags: {
-          cash: P.extractCashtags(text),
-          hash: P.extractHashtags(text),
-          mention: P.extractMentions(text),
-        },
-        urls: P.extractUrls(text),
-        clearText,
+      if (!getDetails) return;
+
+      startTransition(() => {
+        getDetails({
+          charsLeft: charLimit - deferredText.length,
+          text: deferredText,
+          highlightedText,
+          tags: {
+            cash: P.extractCashtags(deferredText),
+            hash: P.extractHashtags(deferredText),
+            mention: P.extractMentions(deferredText),
+          },
+          urls: P.extractUrls(deferredText),
+          clearText,
+        });
       });
-    }, [charsLeft, getDetails, highlightedText, text, clearText]);
+    }, [charLimit, deferredText, getDetails, highlightedText, clearText]);
   
     // Handle Ctrl+Enter for submission
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -263,7 +258,6 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
         } else {
           setInternalText('');
         }
-        setUnformattedText('');
       }
     }, [charsLeft, text, isControlled, onChange]);
   
