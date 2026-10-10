@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { TextAreaBox, Detail, type Details } from 'react-textarea-enhanced';
-import 'react-textarea-enhanced/dist/index.css';
+import { TextAreaBox, Detail, type Details } from '@ojutalayomi/react-textarea-enhanced';
+import '@ojutalayomi/react-textarea-enhanced/dist/index.css';
 // import TextAreaBox from './components/TextAreaBox';
 // import { Detail, type Details } from './components/types';
 // import './style/index.css';
@@ -126,5 +126,3 @@ const ChatPage: React.FC = () => {
 };
 
 export default ChatPage;
-
-

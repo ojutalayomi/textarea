@@ -3,6 +3,50 @@ import P, { type EntityWithIndices } from './lib/text';
 import type { TextAreaBoxProps } from './types';
 
 /**
+ * Builds an array of React elements with entity highlights for a given text segment.
+ * Defined outside the component so it is never recreated on re-render.
+ */
+function buildHighlightedParts(
+  text: string,
+  getEntityProps: (entity: EntityWithIndices) => { type: string; href?: string; label?: string },
+  classNamePrefix: string,
+  highlightColor: string,
+): React.ReactElement[] {
+  const entities = P.extractEntitiesWithIndices(text);
+  entities.sort((a: EntityWithIndices, b: EntityWithIndices) => a.indices[0] - b.indices[0]);
+
+  const parts: React.ReactElement[] = [];
+  let lastIndex = 0;
+
+  entities.forEach((entity: EntityWithIndices) => {
+    const before = text.slice(lastIndex, entity.indices[0]);
+    if (before) parts.push(<span key={parts.length}>{before}</span>);
+
+    const entityText = text.slice(entity.indices[0], entity.indices[1]);
+    const { type, href, label } = getEntityProps(entity);
+    parts.push(
+      <a
+        key={parts.length}
+        className={`highlight ${type} ${classNamePrefix}-highlight`}
+        style={{ color: highlightColor }}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+      >
+        {entityText}
+      </a>
+    );
+    lastIndex = entity.indices[1];
+  });
+
+  const after = text.slice(lastIndex);
+  if (after) parts.push(<span key={parts.length}>{after}</span>);
+
+  return parts;
+}
+
+/**
  * TextAreaBox component
  *
  * A customizable textarea component with entity highlighting, character limit enforcement,
@@ -61,37 +105,19 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
     const wrapperId = wrapperIdProp ?? `textarea-wrapper-${reactId}`;
     const textareaId = textareaIdProp ?? `textarea-${reactId}`;
     const highlightId = highlightIdProp ?? `highlight-layer-${reactId}`;
-    
+
     // Use controlled value if provided, otherwise use internal state
     const isControlled = controlledValue !== undefined;
     const [internalText, setInternalText] = useState('');
-    
+
     const text = isControlled ? (controlledValue ?? '') : internalText;
     const textareaRef = useRef<HTMLTextAreaElement>(ref as unknown as HTMLTextAreaElement);
-    const regex = useMemo(() => /\s*<limit>([\s\S]*?)<\/limit>/, []);
     const deferredText = useDeferredValue(text);
     const charsLeft = charLimit - text.length;
-  
-    const getFinalText = useCallback((value: string, charLimit: number) => {
-      let finalText = '';
-      if (value.length > charLimit) {
-        // If already wrapped with <limit>, preserve as is
-        if (value.includes('<limit>') && value.includes('</limit>')) {
-          finalText = value;
-        } else {
-          finalText = value.slice(0, charLimit) + `<limit>${value.slice(charLimit)}</limit>`;
-        }
-      } else {
-        finalText = value;
-      }
-      return finalText;
-    }, []);
 
-    const formattedText = useMemo(() => getFinalText(text, charLimit), [charLimit, getFinalText, text]);
-    const deferredFormattedText = useDeferredValue(formattedText);
-    
     /**
-     * Handle text input
+     * Handle text input.
+     * No need to wrap/unwrap <limit> tags here — we simply store the raw value.
      */
     const handleInput = useCallback((
       e: React.ChangeEvent<HTMLTextAreaElement> | React.ClipboardEvent<HTMLTextAreaElement> | React.FormEvent<HTMLTextAreaElement>
@@ -99,35 +125,35 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       let value = '';
       if ('clipboardData' in e && e.clipboardData) {
         e.preventDefault();
-        value = e.clipboardData.getData('text');
+        const pastedText = e.clipboardData.getData('text');
+        // Insert at the current cursor position rather than replacing all content.
+        const ta = e.currentTarget as HTMLTextAreaElement;
+        const start = ta.selectionStart ?? ta.value.length;
+        const end = ta.selectionEnd ?? ta.value.length;
+        value = ta.value.slice(0, start) + pastedText + ta.value.slice(end);
       } else if ('currentTarget' in e && e.currentTarget && e.currentTarget.value !== undefined) {
         value = e.currentTarget.value;
       } else if ('target' in e && e.target && (e.target as HTMLTextAreaElement).value !== undefined) {
         value = (e.target as HTMLTextAreaElement).value;
       }
 
-      const finalText = getFinalText(value, charLimit);
-      const re = regex.exec(finalText);
-      let theText = finalText.slice(0, charLimit);
-      if (finalText.length > charLimit && re) {
-        theText += re[1];
-      }
-
-      // Update state based on controlled/uncontrolled mode
       if (isControlled) {
-        onChange?.(theText);
+        onChange?.(value);
       } else {
-        setInternalText(theText);
+        setInternalText(value);
       }
-    }, [charLimit, regex, isControlled, onChange, getFinalText]);
-  
-    // Auto-expand textarea and update counter
+    }, [isControlled, onChange]);
+
+    // Auto-expand textarea.
+    // Cap against maxHeight directly — using previousElementSibling.clientHeight would
+    // read the highlight div's height, which is driven by deferredText and lags behind
+    // after a paste, causing the textarea to not expand to the correct size.
     useEffect(() => {
       const textarea = textareaRef.current;
       textarea!.style.height = 'auto';
-      textarea!.style.height = `${Math.min(textarea!.scrollHeight, textarea!.previousElementSibling!.clientHeight)}px`;
-    }, [charLimit, height, text]);
-  
+      textarea!.style.height = `${Math.min(textarea!.scrollHeight, maxHeight)}px`;
+    }, [charLimit, height, maxHeight, text]);
+
     // Helper to determine entity type and generate href
     const getEntityProps = useCallback((entity: EntityWithIndices) => {
       if ('hashtag' in entity) {
@@ -147,7 +173,7 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       if ('url' in entity) {
         return {
           type: 'url',
-          href: entity.url, // Already normalized by twitter-text
+          href: entity.url,
           label: `Open link ${entity.url}`,
         };
       }
@@ -160,67 +186,84 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       }
       return { type: '' };
     }, [baseUrl]);
-  
-    // Memoized highlighted text using twitter-text for robust parsing
-    const highlightedText = useMemo(() => {
-      const re = regex.exec(deferredFormattedText);
-  
-      const entityHandler = (text: string, limit = true) => {
-        const theText = text.length > charLimit && limit ? text.slice(0, charLimit) : text;
-        
-        // Extract entities with indices (robust handling of Unicode, punctuation, etc.)
-        const entities = P.extractEntitiesWithIndices(theText);
-  
-        // Sort by start index (though usually pre-sorted)
-        entities.sort((a: EntityWithIndices, b: EntityWithIndices) => a.indices[0] - b.indices[0]);
-  
-        const parts: React.ReactElement[] = [];
-        let lastIndex = 0;
 
-        entities.forEach((entity: EntityWithIndices) => {
-          // Plain text before entity
-          const before = theText.slice(lastIndex, entity.indices[0]);
-          if (before) {
-            parts.push(<span key={parts.length}>{before}</span>);
-          }
-  
-          // Highlighted entity
-          const entityText = theText.slice(entity.indices[0], entity.indices[1]);
-          const { type, href, label } = getEntityProps(entity);
-          parts.push(
-            <a
-              key={parts.length}
-              className={`highlight ${type} ${classNamePrefix}-highlight`}
-              style={{ color: highlightColor }}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-            >
-              {entityText}
-            </a>
-          );
-  
-          lastIndex = entity.indices[1];
-        });
-  
-        // Remaining plain text
-        const after = theText.slice(lastIndex);
-        if (after) {
-          parts.push(<span key={parts.length}>{after}</span>);
-        }
-        return { parts, theText };
+    /**
+     * Single memo that does ALL entity work in one pass:
+     *   - builds highlighted React elements for the highlight layer
+     *   - derives tags/urls for getDetails (no extra parsing passes)
+     *
+     * Uses deferredText so this heavy work doesn't block the keystroke.
+     */
+    const entityData = useMemo(() => {
+      const mainText = deferredText.length > charLimit
+        ? deferredText.slice(0, charLimit)
+        : deferredText;
+      const overflowText = deferredText.length > charLimit
+        ? deferredText.slice(charLimit)
+        : null;
+
+      // --- Build highlighted parts for main text (one extraction call) ---
+      const mainEntities = P.extractEntitiesWithIndices(mainText);
+      mainEntities.sort((a: EntityWithIndices, b: EntityWithIndices) => a.indices[0] - b.indices[0]);
+
+      const parts: React.ReactElement[] = [];
+      let lastIndex = 0;
+
+      // Derive tags/urls while iterating — no extra extraction passes needed
+      const cashtags: string[] = [];
+      const hashtags: string[] = [];
+      const mentions: string[] = [];
+      const urls: string[] = [];
+
+      mainEntities.forEach((entity: EntityWithIndices) => {
+        // Collect tag/url data
+        if ('cashtag' in entity) cashtags.push(entity.cashtag);
+        else if ('hashtag' in entity) hashtags.push(entity.hashtag);
+        else if ('screenName' in entity) mentions.push(entity.screenName);
+        else if ('url' in entity) urls.push(entity.url);
+
+        // Build highlight elements
+        const before = mainText.slice(lastIndex, entity.indices[0]);
+        if (before) parts.push(<span key={parts.length}>{before}</span>);
+
+        const entityText = mainText.slice(entity.indices[0], entity.indices[1]);
+        const { type, href, label } = getEntityProps(entity);
+        parts.push(
+          <a
+            key={parts.length}
+            className={`highlight ${type} ${classNamePrefix}-highlight`}
+            style={{ color: highlightColor }}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={label}
+          >
+            {entityText}
+          </a>
+        );
+        lastIndex = entity.indices[1];
+      });
+
+      const after = mainText.slice(lastIndex);
+      if (after) parts.push(<span key={parts.length}>{after}</span>);
+
+      // --- Overflow (beyond charLimit) ---
+      if (overflowText) {
+        const overflowParts = buildHighlightedParts(overflowText, getEntityProps, classNamePrefix, highlightColor);
+        parts.push(
+          <span key={parts.length} className="limit-content">
+            {overflowParts}
+          </span>
+        );
       }
-  
-      const { parts } = entityHandler(deferredText);
-  
-      if (deferredText.length > charLimit && re) {
-        parts.push(<span key={parts.length} className='limit-content'>{entityHandler(re[1], false).parts}</span>);
-      }
-      
-      return parts;
-    }, [charLimit, regex, deferredText, deferredFormattedText, getEntityProps, classNamePrefix, highlightColor]);
-  
+
+      return {
+        highlightedText: parts,
+        tags: { cash: cashtags, hash: hashtags, mention: mentions },
+        urls,
+      };
+    }, [deferredText, charLimit, getEntityProps, classNamePrefix, highlightColor]);
+
     const clearText = useCallback(() => {
       if (isControlled) {
         onChange?.('');
@@ -229,7 +272,7 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
       }
       requestAnimationFrame(() => textareaRef.current?.focus());
     }, [isControlled, onChange]);
-    
+
     useEffect(() => {
       if (!getDetails) return;
 
@@ -237,18 +280,14 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
         getDetails({
           charsLeft: charLimit - deferredText.length,
           text: deferredText,
-          highlightedText,
-          tags: {
-            cash: P.extractCashtags(deferredText),
-            hash: P.extractHashtags(deferredText),
-            mention: P.extractMentions(deferredText),
-          },
-          urls: P.extractUrls(deferredText),
+          highlightedText: entityData.highlightedText,
+          tags: entityData.tags,
+          urls: entityData.urls,
           clearText,
         });
       });
-    }, [charLimit, deferredText, getDetails, highlightedText, clearText]);
-  
+    }, [charLimit, deferredText, getDetails, entityData, clearText]);
+
     // Handle Ctrl+Enter for submission
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.ctrlKey && e.key === 'Enter' && text.length > 0 && charsLeft >= 0) {
@@ -260,7 +299,7 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
         }
       }
     }, [charsLeft, text, isControlled, onChange]);
-  
+
     const wrapperBaseClass = legacyClassNames ? 'textarea-wrapper ' : '';
     const wrapperPrefixedClass = `${classNamePrefix}-wrapper`;
     const highlightBaseClass = legacyClassNames ? 'highlight-layer' : '';
@@ -277,11 +316,11 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
           textareaRef.current?.focus();
         }}
         className={(wrapperBaseClass + wrapperPrefixedClass + (wrapperClassName ? ' ' + wrapperClassName : '') + (className ? ' ' + className : '')).trim()}
-        style={{ 
-          ...(maxHeight && { maxHeight: `${maxHeight}px` }), 
-          ...(minHeight && { minHeight: `${minHeight}px` }), 
-          ...(height && { height: `${height}px` }), 
-          ...style 
+        style={{
+          ...(maxHeight && { maxHeight: `${maxHeight}px` }),
+          ...(minHeight && { minHeight: `${minHeight}px` }),
+          ...(height && { height: `${height}px` }),
+          ...style
         }}
       >
         <div
@@ -289,7 +328,7 @@ const TextAreaBox = React.forwardRef<HTMLTextAreaElement, TextAreaBoxProps>(
           className={([highlightBaseClass, highlightPrefixedClass, highlightClassName].filter(Boolean) as string[]).join(' ')}
           style={{ minHeight: `${minHeight}px`, fontFamily: fontFamily }}
         >
-          {highlightedText}
+          {entityData.highlightedText}
         </div>
         <textarea
           id={textareaId}

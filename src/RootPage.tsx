@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import React, { useState } from 'react';
-import { TextAreaBox, Detail, type Details } from 'react-textarea-enhanced';
-import 'react-textarea-enhanced/dist/index.css';
+import { TextAreaBox, Detail, type Details } from '@ojutalayomi/react-textarea-enhanced';
+import '@ojutalayomi/react-textarea-enhanced/dist/index.css';
 import './style/style.css';
 import './elements/counter-element';
 import { Link } from 'react-router-dom';
@@ -12,7 +12,7 @@ const RootPage = () => {
   const [text, setText] = useState('');
   const toolbar = document.getElementById('toolbar');
   const contentDiv = document.getElementById('content');
-  
+
   // Handle Ctrl+Enter for submission
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey) && e.key === 'Enter' && details.text.length > 0 && details.charsLeft >= 0) {
@@ -24,7 +24,7 @@ const RootPage = () => {
   function applyFormat(command: string) {
     // document.execCommand handles the formatting directly on the selected text
     document.execCommand(command, false);
-    
+
     // After applying, hide the toolbar
     toolbar!.style.display = 'none';
   }
@@ -50,7 +50,7 @@ const RootPage = () => {
       toolbar!.style.display = 'none';
     }
   }
-  
+
   return (
     <div className="compose-box">
       <div className='navigation'>
@@ -58,15 +58,15 @@ const RootPage = () => {
         <Link to="/chat">Chat</Link>
       </div>
       <h2>RootPage is rendering!</h2>
-      <TextAreaBox 
+      <TextAreaBox
       value={text}
       onChange={setText}
-      charLimit={1500} 
-      getDetails={setDetails} 
+      charLimit={1500}
+      getDetails={setDetails}
       style={{ color: "white", caretColor: "white", padding: "10px" }}
-      minHeight={30} 
-      maxHeight={350} 
-      onKeyDown={handleKeyDown} 
+      minHeight={30}
+      maxHeight={350}
+      onKeyDown={handleKeyDown}
       onInput={handleInput}
       textareaClassName='po'
       />
